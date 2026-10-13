@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>MCQ Quiz</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #f1f5f9;
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #cbd5e1;
+  --primary: #0f172a;
+  --primary-hover: #1e293b;
+  --correct-bg: #ecfdf5;
+  --correct-border: #10b981;
+  --correct-text: #065f46;
+  --wrong-bg: #fef2f2;
+  --wrong-border: #ef4444;
+  --wrong-text: #991b1b;
+  --exclude-bg: #fffbeb;
+  --exclude-border: #f59e0b;
+  --exclude-text: #92400e;
+}
+
+html, body {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden !important;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+button, input {
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 18px;
+}
+
+.container {
+  width: 100%;
+  height: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* COMPACT TOP HEADER & STATUS BAR */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+  flex-shrink: 0;
+}
+
+.title { font-size: 15px; font-weight: 700; color: var(--muted); }
+.counter { color: var(--muted); font-size: 13px; font-weight: 600; }
+.end-button { border: 1.5px solid #cbd5e1; background: white; color: #334155; border-radius: 6px; padding: 3px 8px; font-size: 11px; font-weight: 700; cursor: pointer; }
+
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.status-group { display: flex; gap: 14px; }
+.correct-status { color: var(--correct-text); }
+.wrong-status { color: var(--wrong-text); }
+.excluded-status { color: var(--exclude-text); }
+
+.progress { width: 100%; height: 4px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-bottom: 6px; flex-shrink: 0; }
+.progress-bar { width: 0%; height: 100%; background: var(--primary); transition: width 0.2s ease; }
+
+/* QUIZ CARD */
+#quizSection {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.quiz-card {
+  width: 100%;
+  height: calc(100vh - 75px) !important;
+  max-height: calc(100vh - 75px) !important;
+  background: var(--card);
+  border-radius: 18px;
+  padding: 16px 28px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  overflow: hidden !important;
+}
+
+/* META */
+.meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  flex-shrink: 0;
+}
+.question-id { font-size: 11px; background: #f1f5f9; color: #475569; padding: 2px 6px; border-radius: 5px; font-weight: 800; }
+.topic { font-size: 13px; color: #64748b; font-weight: 700; }
+
+/* QUESTION BOX */
+.question-area {
+  flex: 0 1 auto;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px 22px !important;
+  min-height: 90px !important;
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.question {
+  font-size: clamp(19px, 2.6vh, 25px) !important;
+  line-height: 1.4;
+  font-weight: 800;
+  color: #0f172a;
+  width: 100%;
+}
+
+/* EXCLUDE BAR */
+.exclude-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  margin-bottom: 6px;
+  border: 1.5px solid var(--exclude-border);
+  background: var(--exclude-bg);
+  color: var(--exclude-text);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.exclude-control input { width: 15px; height: 15px; cursor: pointer; accent-color: #f59e0b; }
+.excluded-badge { display: none; margin-left: auto; font-size: 11px; font-weight: 800; }
+
+/* OPTIONS */
+.options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px !important;
+  flex-shrink: 0;
+  margin-bottom: 4px;
+}
+
+.option {
+  width: 100%;
+  min-height: clamp(60px, 8.5vh, 80px) !important;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 18px !important;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  background: white;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  font-size: clamp(14px, 1.9vh, 18px) !important;
+  line-height: 1.35;
+  font-weight: 600;
+  transition: 0.15s ease;
+}
+
+.option:hover:not(:disabled) {
+  border-color: #334155;
+  background: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.option:disabled {
+  cursor: default;
+}
+
+.letter {
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #e2e8f0;
+  font-weight: 900;
+  font-size: 16px !important;
+  color: #1e293b;
+}
+
+.option.correct { background: var(--correct-bg) !important; border-color: var(--correct-border) !important; }
+.option.correct .letter { background: var(--correct-border) !important; color: white; }
+.option.wrong { background: var(--wrong-bg) !important; border-color: var(--wrong-border) !important; }
+.option.wrong .letter { background: var(--wrong-border) !important; color: white; }
+
+/* RESULT BOX */
+.result {
+  display: none;
+  flex: 1 1 auto;
+  min-height: 50px;
+  max-height: 25vh !important;
+  overflow-y: auto !important;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.result::-webkit-scrollbar { width: 5px; }
+.result::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+.result.correct { display: block; background: var(--correct-bg); border: 1.5px solid #6ee7b7; }
+.result.wrong { display: block; background: var(--wrong-bg); border: 1.5px solid #fca5a5; }
+.result-title { font-size: 16px; font-weight: 900; margin-bottom: 2px; }
+.result-answer { line-height: 1.4; margin-bottom: 4px; font-weight: 700; }
+.explanation { line-height: 1.45; color: #1e293b; }
+
+/* NAVIGATION */
+.navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  flex-shrink: 0 !important;
+}
+
+.nav-button {
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  background: white;
+  color: #1e293b;
+  padding: 10px 24px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.nav-next { border: none; background: var(--primary); color: white; }
+
+/* SETUP & FINAL */
+.setup, .final {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 35px 25px;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.06);
+  margin: auto 0;
+  text-align: center;
+}
+
+.setup-title, .final-title { font-size: 28px; font-weight: 900; margin-bottom: 10px; }
+.setup-text { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
+.final-score { font-size: 48px; font-weight: 900; margin: 14px 0; }
+
+.subject-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  max-width: 540px;
+  margin: 0 auto 20px;
+}
+
+.subject-button { border: 2px solid var(--border); background: white; border-radius: 12px; padding: 14px 10px; font-size: 17px; font-weight: 800; cursor: pointer; }
+.subject-button.selected { background: var(--primary); color: white; border-color: var(--primary); }
+
+.report { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 16px 0; }
+.report-box { padding: 12px 6px; border-radius: 10px; }
+.report-number { font-size: 22px; font-weight: 900; }
+
+.start-area { display: none; justify-content: center; gap: 10px; }
+.start-input { width: 180px; padding: 10px; border: 2px solid var(--border); border-radius: 8px; font-size: 14px; }
+.start-button, .restart-button { border: none; border-radius: 8px; background: var(--primary); color: white; padding: 10px 22px; font-size: 14px; font-weight: 800; cursor: pointer; }
+
+.loading { text-align: center; padding: 70px 20px; color: var(--muted); }
+.error { display: none; background: var(--wrong-bg); border: 1px solid #fecaca; color: #991b1b; padding: 16px; border-radius: 10px; }
+
+@media (max-width: 650px) {
+  .app { padding: 6px 8px; }
+  .quiz-card { height: calc(100vh - 65px) !important; padding: 10px 12px !important; }
+  .question-area { min-height: auto !important; padding: 10px 12px !important; margin-bottom: 4px; }
+  .question { font-size: 16px !important; }
+  .options { grid-template-columns: 1fr; gap: 4px !important; }
+  .option { min-height: 42px !important; padding: 6px 10px !important; font-size: 13px !important; }
+  .letter { width: 26px !important; height: 26px !important; min-width: 26px !important; font-size: 11px !important; }
+  .result { max-height: 22vh !important; font-size: 12px; }
+  .nav-button { padding: 8px 14px; font-size: 13px; }
+}
+</style>
+</head>
+
+<body>
+<main class="app">
+<div class="container">
+
+<!-- SETUP -->
+<section class="setup" id="setup">
+  <div class="setup-title">📚 Sequential MCQ Quiz</div>
+  <div class="setup-text">Select your level first.<br>Questions remain in Google Sheet order.</div>
+  
+  <div class="subject-grid" id="subjectGrid">
+    <button class="subject-button" data-subject="Basic" type="button">🌱 Basic</button>
+    <button class="subject-button" data-subject="Intermediate" type="button">⚡ Intermediate</button>
+    <button class="subject-button" data-subject="Advanced" type="button">🔥 Advanced</button>
+  </div>
+  
+  <div class="selected-subject" id="selectedSubject"></div>
+  <div class="start-area" id="startArea">
+    <input id="startId" class="start-input" type="number" inputmode="numeric" placeholder="Start S.No. (optional)" autocomplete="off">
+    <button id="startButton" class="start-button" type="button">Start Quiz</button>
+  </div>
+</section>
+
+<!-- LOADING & ERROR -->
+<div class="loading" id="loading" style="display:none;">Loading questions...</div>
+<div class="error" id="error"></div>
+
+<!-- QUIZ SECTION -->
+<section id="quizSection" style="display:none;">
+  <div class="header">
+    <div class="title">📚 Sequential Quiz</div>
+    <div class="counter" id="counter"></div>
+    <button class="end-button" id="endButton" type="button">End Quiz</button>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-group">
+      <span class="correct-status" id="correctStatus">Correct: 0</span>
+      <span class="wrong-status" id="wrongStatus">Wrong: 0</span>
+    </div>
+    <div class="status-group">
+      <span class="excluded-status" id="excludedStatus">Excluded: 0</span>
+    </div>
+  </div>
+
+  <div class="progress">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+
+  <div class="quiz-card" id="quizCard">
+    <div class="meta">
+      <div class="meta-left">
+        <span id="questionNumber"></span>
+        <span class="question-id" id="questionId"></span>
+      </div>
+      <span class="topic" id="topic"></span>
+    </div>
+
+    <div class="question-area" id="questionArea">
+      <div class="question" id="question"></div>
+    </div>
+
+    <label class="exclude-control">
+      <input type="checkbox" id="excludeCheckbox">
+      <span>Exclude this question from future quizzes</span>
+      <span class="excluded-badge" id="excludedBadge">EXCLUDED</span>
+    </label>
+
+    <div class="options" id="options"></div>
+
+    <div class="result" id="result">
+      <div class="result-title" id="resultTitle"></div>
+      <div class="result-answer" id="resultAnswer"></div>
+      <strong>Explanation</strong>
+      <div class="explanation" id="explanation"></div>
+    </div>
+
+    <div class="navigation">
+      <button class="nav-button" id="previousButton" type="button">← Previous</button>
+      <button class="nav-button nav-next" id="nextButton" type="button">Next →</button>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL -->
+<section class="final" id="final">
+  <div class="final-title">🎉 Quiz Report</div>
+  <div class="final-score" id="finalScore">0 / 0</div>
+  <div class="report">
+    <div class="report-box correct">
+      <div class="report-number" id="finalCorrect">0</div>
+      <div class="report-label">Correct</div>
+    </div>
+    <div class="report-box wrong">
+      <div class="report-number" id="finalWrong">0</div>
+      <div class="report-label">Wrong</div>
+    </div>
+    <div class="report-box excluded">
+      <div class="report-number" id="finalExcluded">0</div>
+      <div class="report-label">Excluded</div>
+    </div>
+  </div>
+  <div class="final-message" id="finalMessage"></div>
+  <button class="restart-button" id="restartButton" type="button">Start Again</button>
+</section>
+
+</div>
+</main>
+
+<script>
+// PASTE YOUR APPS SCRIPT URL HERE
+const API_URL = "https://script.google.com/macros/s/AKfycbwBMtocU9A0V1v6XVD04zDVn9zNqNwSIG81--GjBSaFCrnjU7lyTAbKQWvjkte3__Gv5Q/exec";
+
+let selectedSubject = "";
+let allQuestions = [];
+let sessionQuestions = [];
+let currentIndex = 0;
+let currentQuestion = null;
+let correctCount = 0;
+let wrongCount = 0;
+
+const setupEl = document.getElementById("setup");
+const selectedSubjectEl = document.getElementById("selectedSubject");
+const startAreaEl = document.getElementById("startArea");
+const startIdEl = document.getElementById("startId");
+const startButtonEl = document.getElementById("startButton");
+const loadingEl = document.getElementById("loading");
+const errorEl = document.getElementById("error");
+const quizSectionEl = document.getElementById("quizSection");
+const quizCardEl = document.getElementById("quizCard");
+const finalEl = document.getElementById("final");
+const counterEl = document.getElementById("counter");
+const correctStatusEl = document.getElementById("correctStatus");
+const wrongStatusEl = document.getElementById("wrongStatus");
+const excludedStatusEl = document.getElementById("excludedStatus");
+const progressBarEl = document.getElementById("progressBar");
+const questionNumberEl = document.getElementById("questionNumber");
+const questionIdEl = document.getElementById("questionId");
+const topicEl = document.getElementById("topic");
+const questionEl = document.getElementById("question");
+const questionAreaEl = document.getElementById("questionArea");
+const excludeCheckboxEl = document.getElementById("excludeCheckbox");
+const excludedBadgeEl = document.getElementById("excludedBadge");
+const optionsEl = document.getElementById("options");
+const resultEl = document.getElementById("result");
+const resultTitleEl = document.getElementById("resultTitle");
+const resultAnswerEl = document.getElementById("resultAnswer");
+const explanationEl = document.getElementById("explanation");
+const previousButtonEl = document.getElementById("previousButton");
+const nextButtonEl = document.getElementById("nextButton");
+const endButtonEl = document.getElementById("endButton");
+const finalScoreEl = document.getElementById("finalScore");
+const finalCorrectEl = document.getElementById("finalCorrect");
+const finalWrongEl = document.getElementById("finalWrong");
+const finalExcludedEl = document.getElementById("finalExcluded");
+const finalMessageEl = document.getElementById("finalMessage");
+const restartButtonEl = document.getElementById("restartButton");
+
+document.querySelectorAll(".subject-button").forEach(function(button) {
+  button.addEventListener("click", function() {
+    document.querySelectorAll(".subject-button").forEach(function(item) {
+      item.classList.remove("selected");
+    });
+    button.classList.add("selected");
+    selectedSubject = button.dataset.subject;
+    selectedSubjectEl.textContent = "Selected level: " + selectedSubject;
+    selectedSubjectEl.style.display = "block";
+    loadQuestions_(selectedSubject);
+  });
+});
+
+function loadQuestions_(subject) {
+  setupEl.style.display = "block";
+  startAreaEl.style.display = "none";
+  loadingEl.style.display = "block";
+  errorEl.style.display = "none";
+
+  const callbackName = "mcqCallback_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+
+  window[callbackName] = function(data) {
+    try {
+      if (!data || data.success === false || !Array.isArray(data.questions)) {
+        throw new Error(data && data.error ? data.error : "Invalid question data.");
+      }
+      allQuestions = data.questions;
+      if (allQuestions.length === 0) {
+        throw new Error("No available questions found in " + subject + ".");
+      }
+      loadingEl.style.display = "none";
+      setupEl.style.display = "block";
+      startAreaEl.style.display = "flex";
+      startIdEl.focus();
+    } catch (error) {
+      showError_(error.message || String(error));
+    } finally {
+      try { delete window[callbackName]; } catch (ignore) {}
+      const script = document.getElementById(callbackName);
+      if (script) script.remove();
+    }
+  };
+
+  const separator = API_URL.indexOf("?") >= 0 ? "&" : "?";
+  const script = document.createElement("script");
+  script.id = callbackName;
+  script.src = API_URL + separator + "action=getAll&subject=" + encodeURIComponent(subject) + "&callback=" + encodeURIComponent(callbackName);
+  script.async = true;
+  script.onerror = function() {
+    try { delete window[callbackName]; } catch (ignore) {}
+    script.remove();
+    showError_("Unable to connect to Apps Script. Please verify the URL.");
+  };
+  document.body.appendChild(script);
+}
+
+function startQuiz() {
+  if (!selectedSubject) {
+    showError_("Please select a level first.");
+    return;
+  }
+  const startId = String(startIdEl.value || "").trim();
+  let startIndex = 0;
+
+  if (startId) {
+    const foundIndex = allQuestions.findIndex(function(q) {
+      return String(q.serial).trim() === startId;
+    });
+    if (foundIndex === -1) {
+      showError_("Question S.No. " + startId + " was not found in " + selectedSubject + ".");
+      return;
+    }
+    startIndex = foundIndex;
+  }
+
+  sessionQuestions = allQuestions.slice(startIndex).map(function(q) {
+    return createSessionQuestion_(q);
+  });
+
+  if (sessionQuestions.length === 0) {
+    showError_("No questions available from this S.No.");
+    return;
+  }
+
+  currentIndex = 0;
+  currentQuestion = null;
+  correctCount = 0;
+  wrongCount = 0;
+
+  setupEl.style.display = "none";
+  errorEl.style.display = "none";
+  finalEl.style.display = "none";
+  quizSectionEl.style.display = "flex";
+
+  updateStatus_();
+  showCurrentQuestion_();
+}
+
+function shouldAvoidShuffle_(options) {
+  if (!options) return false;
+  const patterns = [
+    /\b(all|none)\s+(of\s+)?(the\s+)?(above|below)\b/i,
+    /\bboth\s+(\(?)?[a-eA-E](\)?)\s*(and|&|\/|,)\s*(\(?)?[a-eA-E](\)?)/i,
+    /\b(only\s+)?(\(?)?[a-eA-E](\)?)\s*(&|and|\/)\s*(\(?)?[a-eA-E](\)?)/i,
+    /\b(neither|either)\s+(\(?)?[a-eA-E](\)?)\s*(nor|or)\s*(\(?)?[a-eA-E](\)?)/i,
+    /\b[a-eA-E]\s*,\s*[a-eA-E]\s*(and|&)\s*[a-eA-E]/i,
+    /\boptions?\s+[a-eA-E]\b/i
+  ];
+  for (let key in options) {
+    const text = String(options[key] || "").trim();
+    for (let i = 0; i < patterns.length; i++) {
+      if (patterns[i].test(text)) return true;
+    }
+  }
+  return false;
+}
+
+function createSessionQuestion_(question) {
+  if (shouldAvoidShuffle_(question.options)) {
+    return {
+      serial: question.serial,
+      question: question.question,
+      options: Object.assign({}, question.options),
+      correctAnswer: String(question.correctAnswer).trim().toUpperCase(),
+      explanation: question.explanation,
+      topic: question.topic,
+      excluded: question.excluded === true,
+      userAnswer: null // Tracks if the user answered this question
+    };
+  }
+
+  const shuffled = shuffleOptions_(question);
+  return {
+    serial: question.serial,
+    question: question.question,
+    options: shuffled.options,
+    correctAnswer: shuffled.correctAnswer,
+    explanation: question.explanation,
+    topic: question.topic,
+    excluded: question.excluded === true,
+    userAnswer: null // Tracks if the user answered this question
+  };
+}
+
+function shuffleOptions_(question) {
+  const letters = Object.keys(question.options).filter(function(k) {
+    return question.options[k] && String(question.options[k]).trim() !== "";
+  });
+
+  const items = letters.map(function(letter) {
+    return {
+      text: question.options[letter] || "",
+      isCorrect: letter.toUpperCase() === String(question.correctAnswer).trim().toUpperCase()
+    };
+  });
+
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const temp = items[i];
+    items[i] = items[j];
+    items[j] = temp;
+  }
+
+  const options = {};
+  let correctAnswer = letters[0] || "A";
+
+  items.forEach(function(item, index) {
+    const newLetter = letters[index];
+    options[newLetter] = item.text;
+    if (item.isCorrect) correctAnswer = newLetter;
+  });
+
+  return { options: options, correctAnswer: correctAnswer };
+}
+
+function showCurrentQuestion_() {
+  if (currentIndex < 0) currentIndex = sessionQuestions.length - 1;
+  if (currentIndex >= sessionQuestions.length) currentIndex = 0;
+
+  currentQuestion = sessionQuestions[currentIndex];
+
+  questionNumberEl.textContent = "Question " + (currentIndex + 1) + " / " + sessionQuestions.length;
+  questionIdEl.textContent = "ID " + currentQuestion.serial;
+  counterEl.textContent = "Position " + (currentIndex + 1) + " of " + sessionQuestions.length;
+  topicEl.textContent = currentQuestion.topic || "";
+  questionEl.textContent = currentQuestion.question;
+
+  updateExcludedUI_();
+  optionsEl.innerHTML = "";
+
+  const availableLetters = Object.keys(currentQuestion.options).filter(function(k) {
+    return currentQuestion.options[k] && String(currentQuestion.options[k]).trim() !== "";
+  });
+
+  const isAlreadyAnswered = currentQuestion.userAnswer !== null;
+
+  availableLetters.forEach(function(letter) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "option";
+    button.dataset.letter = letter;
+
+    const letterSpan = document.createElement("span");
+    letterSpan.className = "letter";
+    letterSpan.textContent = letter;
+
+    const textSpan = document.createElement("span");
+    textSpan.textContent = currentQuestion.options[letter];
+
+    button.appendChild(letterSpan);
+    button.appendChild(textSpan);
+
+    // If previously answered, highlight and lock options
+    if (isAlreadyAnswered) {
+      button.disabled = true;
+      if (letter === currentQuestion.correctAnswer) {
+        button.classList.add("correct");
+      }
+      if (letter === currentQuestion.userAnswer && currentQuestion.userAnswer !== currentQuestion.correctAnswer) {
+        button.classList.add("wrong");
+      }
+    } else {
+      button.addEventListener("click", function() {
+        selectAnswer_(letter);
+      });
+    }
+
+    optionsEl.appendChild(button);
+  });
+
+  // Display result box if already answered
+  if (isAlreadyAnswered) {
+    const isCorrect = currentQuestion.userAnswer === currentQuestion.correctAnswer;
+    resultEl.className = isCorrect ? "result correct" : "result wrong";
+    resultTitleEl.textContent = isCorrect ? "✅ Correct" : "❌ Wrong";
+    resultAnswerEl.innerHTML = "Your answer: " + escapeHtml_(currentQuestion.userAnswer + ". " + currentQuestion.options[currentQuestion.userAnswer]) + "<br>" +
+      "Correct answer: " + escapeHtml_(currentQuestion.correctAnswer + ". " + currentQuestion.options[currentQuestion.correctAnswer]);
+    explanationEl.textContent = currentQuestion.explanation || "No explanation provided.";
+    resultEl.style.display = "block";
+  } else {
+    resultEl.className = "result";
+    resultEl.style.display = "none";
+  }
+
+  updateStatus_();
+}
+
+function selectAnswer_(selected) {
+  // If already answered previously, ignore completely (no duplicate counting)
+  if (currentQuestion.userAnswer !== null) return;
+
+  currentQuestion.userAnswer = selected;
+
+  const correct = currentQuestion.correctAnswer;
+  const isCorrect = selected === correct;
+
+  // Added only once per question
+  if (isCorrect) correctCount++;
+  else wrongCount++;
+
+  const buttons = optionsEl.querySelectorAll(".option");
+  buttons.forEach(function(button) {
+    button.disabled = true;
+    const letter = button.dataset.letter;
+    if (letter === correct) button.classList.add("correct");
+    if (letter === selected && !isCorrect) button.classList.add("wrong");
+  });
+
+  if (isCorrect) {
+    resultEl.className = "result correct";
+    resultTitleEl.textContent = "✅ Correct";
+  } else {
+    resultEl.className = "result wrong";
+    resultTitleEl.textContent = "❌ Wrong";
+  }
+
+  resultAnswerEl.innerHTML = "Your answer: " + escapeHtml_(selected + ". " + currentQuestion.options[selected]) + "<br>" +
+    "Correct answer: " + escapeHtml_(correct + ". " + currentQuestion.options[correct]);
+
+  explanationEl.textContent = currentQuestion.explanation || "No explanation provided.";
+  resultEl.style.display = "block";
+  updateStatus_();
+}
+
+function goNext_() {
+  currentIndex++;
+  if (currentIndex >= sessionQuestions.length) currentIndex = 0;
+  showCurrentQuestion_();
+}
+
+function goPrevious_() {
+  currentIndex--;
+  if (currentIndex < 0) currentIndex = sessionQuestions.length - 1;
+  showCurrentQuestion_();
+}
+
+nextButtonEl.addEventListener("click", goNext_);
+previousButtonEl.addEventListener("click", goPrevious_);
+
+document.addEventListener("keydown", function(event) {
+  if (document.activeElement === startIdEl || quizSectionEl.style.display === "none") return;
+  if (event.key === "ArrowRight" || event.key === "ArrowDown") { event.preventDefault(); goNext_(); }
+  if (event.key === "ArrowLeft" || event.key === "ArrowUp") { event.preventDefault(); goPrevious_(); }
+});
+
+excludeCheckboxEl.addEventListener("change", function() {
+  setExcludeState_(excludeCheckboxEl.checked);
+});
+
+function toggleExclude_() {
+  if (!currentQuestion) return;
+  setExcludeState_(!currentQuestion.excluded);
+}
+
+function setExcludeState_(excluded) {
+  if (!currentQuestion) return;
+  const serial = String(currentQuestion.serial);
+  currentQuestion.excluded = excluded;
+  sessionQuestions[currentIndex].excluded = excluded;
+
+  const masterIndex = allQuestions.findIndex(function(q) { return String(q.serial) === serial; });
+  if (masterIndex !== -1) allQuestions[masterIndex].excluded = excluded;
+
+  updateExcludedUI_();
+  updateStatus_();
+  saveExcludeToServer_(serial, excluded);
+}
+
+function updateExcludedUI_() {
+  const excluded = currentQuestion && currentQuestion.excluded === true;
+  excludeCheckboxEl.checked = excluded;
+  excludedBadgeEl.style.display = excluded ? "inline-block" : "none";
+}
+
+function saveExcludeToServer_(serial, excluded) {
+  if (!selectedSubject) return;
+  const callbackName = "excludeCallback_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+  window[callbackName] = function(data) {
+    try {
+      if (!data || data.success !== true) {
+        window.alert("Unable to save exclusion status to Google Sheet.");
+      }
+    } finally {
+      try { delete window[callbackName]; } catch (ignore) {}
+      const script = document.getElementById(callbackName);
+      if (script) script.remove();
+    }
+  };
+  const separator = API_URL.indexOf("?") >= 0 ? "&" : "?";
+  const script = document.createElement("script");
+  script.id = callbackName;
+  script.src = API_URL + separator + "action=toggleExclude&subject=" + encodeURIComponent(selectedSubject) + "&serial=" + encodeURIComponent(serial) + "&exclude=" + encodeURIComponent(excluded) + "&callback=" + encodeURIComponent(callbackName);
+  script.async = true;
+  document.body.appendChild(script);
+}
+
+function updateStatus_() {
+  correctStatusEl.textContent = "Correct: " + correctCount;
+  wrongStatusEl.textContent = "Wrong: " + wrongCount;
+  const excludedCount = sessionQuestions.filter(function(q) { return q.excluded === true; }).length;
+  excludedStatusEl.textContent = "Excluded: " + excludedCount;
+  const progress = sessionQuestions.length > 0 ? ((currentIndex + 1) / sessionQuestions.length) * 100 : 0;
+  progressBarEl.style.width = Math.min(progress, 100) + "%";
+}
+
+endButtonEl.addEventListener("click", function() {
+  if (window.confirm("End the quiz now?")) showFinal_();
+});
+
+function showFinal_() {
+  quizSectionEl.style.display = "none";
+  finalEl.style.display = "block";
+  const attempted = correctCount + wrongCount;
+  const percentage = attempted > 0 ? Math.round((correctCount / attempted) * 100) : 0;
+  const excludedCount = sessionQuestions.filter(function(q) { return q.excluded === true; }).length;
+  finalScoreEl.textContent = correctCount + " / " + attempted;
+  finalCorrectEl.textContent = correctCount;
+  finalWrongEl.textContent = wrongCount;
+  finalExcludedEl.textContent = excludedCount;
+  finalMessageEl.textContent = selectedSubject + " quiz ended. " + percentage + "% correct among attempted.";
+}
+
+restartButtonEl.addEventListener("click", function() {
+  finalEl.style.display = "none";
+  quizSectionEl.style.display = "none";
+  setupEl.style.display = "block";
+  startAreaEl.style.display = "none";
+  selectedSubject = "";
+  allQuestions = [];
+  sessionQuestions = [];
+  currentQuestion = null;
+  document.querySelectorAll(".subject-button").forEach(function(b) { b.classList.remove("selected"); });
+  selectedSubjectEl.style.display = "none";
+  startIdEl.value = "";
+  startIdEl.focus();
+});
+
+function showError_(message) {
+  loadingEl.style.display = "none";
+  quizSectionEl.style.display = "none";
+  finalEl.style.display = "none";
+  errorEl.textContent = message;
+  errorEl.style.display = "block";
+}
+
+function escapeHtml_(value) {
+  const div = document.createElement("div");
+  div.textContent = value == null ? "" : String(value);
+  return div.innerHTML;
+}
+
+startButtonEl.addEventListener("click", startQuiz);
+startIdEl.addEventListener("keydown", function(event) {
+  if (event.key === "Enter") startQuiz();
+});
+
+/* TOUCH & GESTURE NAVIGATION */
+let touchStartX = 0;
+let touchStartY = 0;
+let touchStartTime = 0;
+let isDragging = false;
+
+quizCardEl.addEventListener("touchstart", function(event) {
+  if (event.touches.length !== 1) return;
+  const touch = event.touches[0];
+  touchStartX = touch.clientX;
+  touchStartY = touch.clientY;
+  touchStartTime = Date.now();
+}, { passive: true });
+
+quizCardEl.addEventListener("touchend", function(event) {
+  if (!touchStartTime) return;
+  const touch = event.changedTouches[0];
+  const deltaX = touch.clientX - touchStartX;
+  const deltaY = touch.clientY - touchStartY;
+  const duration = Date.now() - touchStartTime;
+  touchStartTime = 0;
+
+  if (duration > 800) return;
+  const absX = Math.abs(deltaX);
+  const absY = Math.abs(deltaY);
+  if (Math.max(absX, absY) < 40) return;
+
+  if (absX >= absY) {
+    if (deltaX < 0) goNext_();
+    else goPrevious_();
+  } else {
+    if (deltaY < 0) goNext_();
+    else goPrevious_();
+  }
+}, { passive: true });
+
+quizCardEl.addEventListener("mousedown", function(event) {
+  if (event.target.closest(".option") || event.target.closest("button") || event.target.closest("input")) return;
+  isDragging = true;
+  touchStartX = event.clientX;
+  touchStartY = event.clientY;
+  touchStartTime = Date.now();
+});
+
+document.addEventListener("mouseup", function(event) {
+  if (!isDragging || !touchStartTime) return;
+  isDragging = false;
+  const deltaX = event.clientX - touchStartX;
+  const deltaY = event.clientY - touchStartY;
+  const duration = Date.now() - touchStartTime;
+  touchStartTime = 0;
+
+  if (duration > 800) return;
+  const absX = Math.abs(deltaX);
+  const absY = Math.abs(deltaY);
+  if (Math.max(absX, absY) < 50) return;
+
+  if (absX >= absY) {
+    if (deltaX < 0) goNext_();
+    else goPrevious_();
+  } else {
+    if (deltaY < 0) goNext_();
+    else goPrevious_();
+  }
+});
+
+/* DOUBLE-TAP / DOUBLE-CLICK EXCLUDE TOGGLE */
+questionAreaEl.addEventListener("dblclick", function(event) {
+  event.preventDefault();
+  toggleExclude_();
+});
+
+let lastTapTime = 0;
+let lastTapX = 0;
+let lastTapY = 0;
+
+questionAreaEl.addEventListener("touchend", function(event) {
+  const touch = event.changedTouches[0];
+  const now = Date.now();
+  const x = touch.clientX;
+  const y = touch.clientY;
+  const elapsed = now - lastTapTime;
+  const distance = Math.sqrt(Math.pow(x - lastTapX, 2) + Math.pow(y - lastTapY, 2));
+
+  if (elapsed < 400 && distance < 40) {
+    event.preventDefault();
+    toggleExclude_();
+    lastTapTime = 0;
+    return;
+  }
+  lastTapTime = now;
+  lastTapX = x;
+  lastTapY = y;
+}, { passive: false });
+</script>
+</body>
+</html>
